@@ -3,18 +3,24 @@ class TopicsController < ApplicationController
 
   # GET /topics
   def index
-    # @topics = Topic.all
 
+    # filter by search query
     if params[:search]
-      @topics = Topic.search(params[:search]).order("created_at DESC")
+      @topics = Topic.search(params[:search])
     else
-      @topics = Topic.all.order("created_at DESC")
+      @topics = Topic.all
     end
 
-    render json: @topics, include: ['posts']
-  end
+    # order by created_at
+    @topics = @topics.includes(:posts).reorder("posts.created_at DESC").order("topics.created_at DESC")
 
-  def posts
+    # paginate
+    if params[:page]
+      @topics = @topics.page(params[:page]).per(params[:per_page])
+      render json: @topics, include: ['posts'], meta: pagination(@topics)
+    else
+      render json: @topics, include: ['posts']
+    end
   end
 
   # GET /topics/1
@@ -25,29 +31,41 @@ class TopicsController < ApplicationController
   # POST /topics
   def create
     @topic = Topic.new(topic_params)
-
-    if @topic.save
-      render json: @topic, status: :created, location: @topic
+    if @topic.user == current_user
+      if @topic.save
+        render json: @topic, status: :created, location: @topic
+      else
+        render json: @topic.errors, status: :unprocessable_entity
+      end
     else
-      render json: @topic.errors, status: :unprocessable_entity
+      render json: {error: "unauthorized"}, status: 401
     end
   end
 
   # PATCH/PUT /topics/1
   def update
-    if @topic.update(topic_params)
-      render json: @topic
+    if @topic.user == current_user
+      if @topic.update(topic_params)
+        render json: @topic
+      else
+        render json: @topic.errors, status: :unprocessable_entity
+      end
     else
-      render json: @topic.errors, status: :unprocessable_entity
+      render json: {error: "unauthorized"}, status: 401
     end
   end
 
   # DELETE /topics/1
   def destroy
-    @topic.destroy
+    if @topic.user == current_user
+      @topic.destroy
+    else
+      render json: {error: "unauthorized"}, status: 401
+    end
   end
 
   private
+
     # Use callbacks to share common setup or constraints between actions.
     def set_topic
       @topic = Topic.find(params[:id])
@@ -55,6 +73,6 @@ class TopicsController < ApplicationController
 
     # Only allow a trusted parameter "white list" through.
     def topic_params
-      params.require(:topic).permit(:title, :body, :user_id)
+      ActiveModelSerializers::Deserialization.jsonapi_parse(params, only: [:title, :body, :user])
     end
 end
