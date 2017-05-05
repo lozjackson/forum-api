@@ -1,5 +1,4 @@
 Rails.application.routes.draw do
-  # get '/users/current-user', to: "current_user#show"
   resources :users
   resources :posts
   resources :topics
