@@ -3,9 +3,19 @@ class PostsController < ApplicationController
 
   # GET /posts
   def index
-    @posts = Post.all
+    if params[:topic]
+      topic = Topic.find(params[:topic])
+      @posts = topic.posts
+    else
+      @posts = Post.all
+    end
 
-    render json: @posts
+    if params[:page]
+      @posts = @posts.page(params[:page]).per(params[:per_page])
+      render json: @posts, meta: pagination(@posts)
+    else
+      render json: @posts
+    end
   end
 
   # GET /posts/1
@@ -46,6 +56,6 @@ class PostsController < ApplicationController
 
     # Only allow a trusted parameter "white list" through.
     def post_params
-      params.require(:post).permit(:body, :topic_id, :user_id)
+      ActiveModelSerializers::Deserialization.jsonapi_parse(params, only: [:body, :topic, :user])
     end
 end
