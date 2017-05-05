@@ -1,9 +1,9 @@
 class CreatePosts < ActiveRecord::Migration[5.1]
   def change
     create_table :posts do |t|
-      t.string :body
-      t.references :topic, foreign_key: true
-      t.references :user, foreign_key: true
+      t.text :body, :limit => 4294967295
+      t.references :topic
+      t.references :user
 
       t.timestamps
     end
