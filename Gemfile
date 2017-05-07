@@ -45,3 +45,4 @@ gem 'jwt'
 gem 'figaro'
 gem 'kaminari'
 gem 'mysql2'
+gem "rolify"
