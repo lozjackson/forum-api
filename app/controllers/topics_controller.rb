@@ -1,7 +1,8 @@
 class TopicsController < ApplicationController
   before_action :set_topic, only: [:show, :update, :destroy]
+  before_action :can_edit_topic, only: :update
+  before_action :can_delete_topic, only: :destroy
 
-  # GET /topics
   def index
 
     # filter by search query
@@ -23,12 +24,10 @@ class TopicsController < ApplicationController
     end
   end
 
-  # GET /topics/1
   def show
     render json: @topic
   end
 
-  # POST /topics
   def create
     @topic = Topic.new(topic_params)
     if @topic.user == current_user
@@ -42,37 +41,33 @@ class TopicsController < ApplicationController
     end
   end
 
-  # PATCH/PUT /topics/1
   def update
-    if @topic.user == current_user
-      if @topic.update(topic_params)
-        render json: @topic
-      else
-        render json: @topic.errors, status: :unprocessable_entity
-      end
+    if @topic.update(topic_params)
+      render json: @topic
     else
-      render json: {error: "unauthorized"}, status: 401
+      render json: @topic.errors, status: :unprocessable_entity
     end
   end
 
-  # DELETE /topics/1
   def destroy
-    if @topic.user == current_user
-      @topic.destroy
-    else
-      render json: {error: "unauthorized"}, status: 401
-    end
+    @topic.destroy
   end
 
   private
 
-    # Use callbacks to share common setup or constraints between actions.
     def set_topic
       @topic = Topic.find(params[:id])
     end
 
-    # Only allow a trusted parameter "white list" through.
     def topic_params
       ActiveModelSerializers::Deserialization.jsonapi_parse(params, only: [:title, :body, :user])
+    end
+
+    def can_edit_topic
+      render json: {error: "You are not authorized to edit this topic"}, status: :forbidden if @topic.user != current_user && !current_user.is_admin? && !current_user.has_role?(:moderator)
+    end
+
+    def can_delete_topic
+      render json: {error: "You are not authorized to delete this topic"}, status: :forbidden if @topic.user != current_user && !current_user.is_admin? && !current_user.has_role?(:moderator)
     end
 end

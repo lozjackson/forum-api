@@ -1,7 +1,8 @@
 class PostsController < ApplicationController
   before_action :set_post, only: [:show, :update, :destroy]
+  before_action :can_edit_post, only: :update
+  before_action :can_delete_post, only: :destroy
 
-  # GET /posts
   def index
     if params[:topic]
       topic = Topic.find(params[:topic])
@@ -18,12 +19,10 @@ class PostsController < ApplicationController
     end
   end
 
-  # GET /posts/1
   def show
     render json: @post
   end
 
-  # POST /posts
   def create
     @post = Post.new(post_params)
 
@@ -34,7 +33,6 @@ class PostsController < ApplicationController
     end
   end
 
-  # PATCH/PUT /posts/1
   def update
     if @post.update(post_params)
       render json: @post
@@ -43,19 +41,24 @@ class PostsController < ApplicationController
     end
   end
 
-  # DELETE /posts/1
   def destroy
     @post.destroy
   end
 
   private
-    # Use callbacks to share common setup or constraints between actions.
     def set_post
       @post = Post.find(params[:id])
     end
 
-    # Only allow a trusted parameter "white list" through.
     def post_params
       ActiveModelSerializers::Deserialization.jsonapi_parse(params, only: [:body, :topic, :user])
+    end
+
+    def can_edit_post
+      render json: {error: "You are not authorized to edit this post"}, status: :forbidden if @post.user != current_user && !current_user.is_admin? && !current_user.has_role?(:moderator)
+    end
+
+    def can_delete_post
+      render json: {error: "You are not authorized to delete this post"}, status: :forbidden if @post.user != current_user && !current_user.is_admin? && !current_user.has_role?(:moderator)
     end
 end

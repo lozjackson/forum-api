@@ -10,7 +10,7 @@ class ApplicationController < ActionController::API
     if auth_present?
       if auth != 'FAILED'
         user = User.find(auth["user"])
-        if user
+        if user && !user.disabled
           @current_user ||= user
         end
       end
