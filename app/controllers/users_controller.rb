@@ -44,11 +44,14 @@ class UsersController < ApplicationController
   def change_password
     @user.password = params[:attributes][:password]
     @user.password_confirmation = params[:attributes][:password_confirmation]
-
-    if @user.password && @user.save
-      render json: { result: true }
+    if !@user.password_confirmation
+      render json: {error: "Password confirmation is empty"}, status: :bad_request
     else
-      render json: {errors: @user.errors.full_messages}, status: 400
+      if @user.password && @user.save
+        render json: { result: true }
+      else
+        render json: {errors: @user.errors.full_messages}, status: :bad_request
+      end
     end
   end
 
@@ -58,7 +61,7 @@ class UsersController < ApplicationController
       @user.add_role name
       render json: @user
     else
-      render json: {error: "No role name"}, status: 400
+      render json: {error: "No role name"}, status: :bad_request
     end
   end
 
