@@ -2,13 +2,8 @@ class RolesController < ApplicationController
   before_action :set_role, only: [:show, :update]
 
   def index
-    if params[:name]
-      @role = Role.find_by(name: params[:name])
-      render json: @role
-    else
-      @roles = Role.all
-      render json: @roles
-    end
+    @roles = Role.all
+    render json: @roles
   end
 
   def show
